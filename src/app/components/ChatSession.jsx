@@ -8,12 +8,13 @@ import { Dropdown, Space } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 
 
+
 import Chats from './Chats';
 import axiosInstance from '../../config/axios';
 import { setSearch } from '../../redux/optionSlice';
 import ChatLoading from "../components/ChatLoading"
 import NewGroupModal from "../components/NewGroupModal"
-
+import socket from "../../config/socket"
 
 
 
@@ -21,6 +22,8 @@ const ChatSession = () => {
     const dispatch = useDispatch();
     const { option } = useSelector( (state) => state.option)
     const {selectedChatId } = useSelector( state => state.chat)
+    const userId = useSelector( state => state.user._id)
+
 
     const [loading, setLoading] = useState(true)
     const [allRelatedChats, setAllRelatedChats] = useState([])
@@ -29,6 +32,7 @@ const ChatSession = () => {
     const [searchText, setSearchText] = useState("")
 
     const [open, setOpen] = useState(false)
+    console.log("Rerendered", )
     
     // dropdown menu options
     const items = [
@@ -89,7 +93,7 @@ const ChatSession = () => {
 
     // updated chats according to the option (all, one-on-one, group and serach)
     useEffect( () => {
-        console.log("executted")
+        console.log("executted", allRelatedChats)
         if(loading) return;
         // if(option == "SEARCH") {
         //     setChats([])
@@ -116,6 +120,33 @@ const ChatSession = () => {
 
     }, [allRelatedChats, option])
 
+
+    useEffect( () => {
+        if(!socket) return;
+
+        socket.emit("authenticate", userId)
+        socket.on("new-message", data => {
+            
+            setAllRelatedChats( allRelatedChats => {
+                let updatedAllChat = [];
+                updatedAllChat = allRelatedChats.map(x => {
+                    if(x._id == data.to) {
+                        return {
+                            ...x, 
+                            lastMessaage: data, 
+                            unreadCount: x.unreadCount + 1
+                        }
+                    }   
+                    return x;   
+                } )
+                return updatedAllChat
+            })
+        })
+
+        return () =>  {
+            socket.off("new-message")
+        }
+    }, [socket, selectedChatId])
 
 
 

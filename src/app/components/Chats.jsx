@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 
 import axiosInstance from '../../config/axios';
@@ -34,7 +34,7 @@ const Chats = ({data, heading}) => {
     const { option } = useSelector( (state) => state.option)
     const userId = useSelector( state => state.user._id)
 
-    console.log(data)
+    const [chatList, setChatList] = useState(data)
 
     const dispatch = useDispatch();
     if(!data.length && option == "SEARCH"){
@@ -61,6 +61,17 @@ const Chats = ({data, heading}) => {
 
     function handleSelect(chat){
         const isGroup = Array.isArray(chat.participants)
+        setChatList( state => {
+            return state.map( x => {
+                if(x._id == chat._id)
+                    return {
+                        ...chat, 
+                        unreadCount: 0
+                    }
+
+                return x;
+            })
+        })
         if(isGroup) {
             dispatch(chatSelected({id: chat._id, isGroup}))
         }
@@ -72,7 +83,6 @@ const Chats = ({data, heading}) => {
             .catch( err => {
                 console.log(err.message)
             })
-
         }
     }
 
@@ -81,8 +91,8 @@ const Chats = ({data, heading}) => {
         if(chat.isGroup) return "/group_stock.jpg";
         
         if(Array.isArray(chat.participants)){
-            const otherUser = chat.participants.filter( x => x.userId._id != userId);
-            return otherUser[0].userId.profilePicture || "/default_user.avif"
+            const otherUser = chat.participants.filter( x => x._id != userId);
+            return otherUser[0].profilePicture || "/default_user.avif"
         }
         else {
             return chat.profilePicture || "/default_user.avif"
@@ -93,13 +103,19 @@ const Chats = ({data, heading}) => {
     function getName(chat){
         if(chat.isGroup) return chat.name;
         if(Array.isArray(chat.participants)){
-            const otherUser = chat.participants.filter( x => x.userId._id != userId);
-            return otherUser[0].userId.userName
+            const otherUser = chat.participants.filter( x => x._id != userId);
+            return otherUser[0].userName
         }
         else {
             return chat.userName
         }
     }
+
+    useEffect( () => {
+        
+        setChatList(data)
+    }, [data])
+
 
   return (
     <div className='mb-6'>
@@ -111,14 +127,14 @@ const Chats = ({data, heading}) => {
       }
       <div>
         {
-            data.length == 0 ? 
+            chatList.length == 0 ? 
                 <div className='h-7 flex justify-center items-center'>
                     <span className='text-xs text-gray-500'>No <span className='font-semibold'>{heading.slice(0,1).toUpperCase() + heading.slice(1).toLowerCase()}</span> with the name.</span>
                 </div>
 
             : 
 
-                data.map( (chat, index) => {
+                chatList.map( (chat, index) => {
                     return (
                         <div key={index} className='px-10 h-full hover:bg-gray-100' onClick={() => handleSelect(chat)}>
                             <div className='flex gap-3 py-4 border-b border-solid border-gray-200'>
@@ -136,26 +152,26 @@ const Chats = ({data, heading}) => {
 
                                         {/* date */}
                                         {
-                                            chat.lastMessageTime &&
+                                            chat.lastMessaage &&
                                             <div>
-                                                {/* <span className={`text-sm text-nowrap ${chat.unreadCount ? "font-semibold text-primary-red" : "text-gray-600"}`}>{formatDate(chat.lastMessageTime)}</span> */}
+                                                <span className={`text-sm text-nowrap ${chat.unreadCount ? "font-semibold text-primary-red" : "text-gray-600"}`}>{formatDate(chat.lastMessaage.time)}</span>
                                             </div>
                                         }
                                     </div>
                                 
                                     {
-                                        chat.lastMessage && 
+                                        chat.lastMessaage && 
                                         <div className='flex gap-3 justify-between'>
                                             {/* last message */}
                                             <div>
-                                                {/* <span className={`line-clamp-1 text-gray-500`}>{chat.lastMessage}</span> */}
+                                                <span className={`line-clamp-1 text-gray-500`}>{chat.lastMessaage.text}</span>
                                             </div>
 
                                             {/* count */}
                                             {
                                                 chat.unreadCount != 0 &&
                                                 <div className='bg-primary-red  py-1 px-3 rounded-full text-white flex justify-center items-center'>
-                                                    {/* <span className={`text-sm inline-block `}>{chat.unreadCount}</span> */}
+                                                    <span className={`text-sm inline-block `}>{chat.unreadCount}</span>
                                                 </div>
                                             }
                                         </div>

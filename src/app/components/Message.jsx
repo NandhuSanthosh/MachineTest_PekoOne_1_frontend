@@ -1,28 +1,9 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { IoIosSend } from "react-icons/io";
 import IndividualMessageTile from './IndividualMessageTile';
 import axiosInstance from '../../config/axios';
 import { useSelector } from 'react-redux';
-
-
-// const messages = [{
-//     from: "12", 
-//     time: new Date(),
-//     text: "hi"
-// }, {
-//     from: "13", 
-//     time: new Date(),
-//     text: "hi, how are you"
-// }, {
-//     from: "12", 
-//     time: new Date(), 
-//     text: "a really long text message from a really close friend of mine"
-// }, {
-//     from: "15", 
-//     time: new Date(), 
-//     text: "a really long text message from a really close friend of mine"
-// }]
-
+import socket from "../../config/socket"
 
 
 const Message = ({messages, pushMessage}) => {
@@ -43,9 +24,24 @@ const Message = ({messages, pushMessage}) => {
             console.log(res.data)
             setText("")
             pushMessage(res.data)
+            socket.emit("new-message", res.data)
         })
     }
 
+
+    useEffect( () => {
+        if(!socket) return;
+        
+        socket.emit("join-chat", selectedChatId)
+        socket.on("new-message", data => {
+            console.log("socket message: ", data)
+            pushMessage(data)
+        })
+
+        return () =>  {
+            socket.off("new-message")
+        }
+    }, [socket, selectedChatId])
 
 
   return (

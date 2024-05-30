@@ -28,7 +28,6 @@ const MessageSession = () => {
 
     const {selectedChatId, isGroup} = useSelector( state => state.chat)
     const [messageDetails, setMessageDetails] = useState(null)
-    console.log(messageDetails)
 
     async function fetchChatDetails(){
         
@@ -47,9 +46,12 @@ const MessageSession = () => {
     }
 
     function pushMessage(newMessage){
-        setMessageDetails({
-            ...messageDetails, 
-            messages: [...messageDetails.messages, newMessage]
+        console.log(messageDetails.messages)
+        setMessageDetails( state => {
+            return {
+                ...state, 
+                messages: [...state.messages, newMessage]
+            }
         })
     }
 
